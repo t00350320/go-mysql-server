@@ -50,7 +50,9 @@ func NewDropIndex(name string, table sql.Node) *DropIndex {
 func (d *DropIndex) Resolved() bool { return d.Table.Resolved() }
 
 // Schema implements the Node interface.
-func (d *DropIndex) Schema() sql.Schema { return nil }
+func (d *DropIndex) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
 
 // Children implements the Node interface.
 func (d *DropIndex) Children() []sql.Node { return []sql.Node{d.Table} }
@@ -115,7 +117,7 @@ func (d *DropIndex) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) 
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), nil
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (d *DropIndex) String() string {

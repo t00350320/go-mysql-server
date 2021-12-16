@@ -147,14 +147,17 @@ func (c *CreateCheck) WithChildren(children ...sql.Node) (sql.Node, error) {
 	return NewAlterAddCheck(children[0], c.Check), nil
 }
 
-func (c *CreateCheck) Schema() sql.Schema { return nil }
+func (c *CreateCheck) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
 
 func (c *CreateCheck) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) {
 	err := c.Execute(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return sql.RowsToRowIter(), nil
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (c CreateCheck) String() string {
@@ -182,7 +185,8 @@ func (p *DropCheck) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) 
 	if err != nil {
 		return nil, err
 	}
-	return sql.RowsToRowIter(), nil
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the Node interface.
@@ -192,7 +196,10 @@ func (p *DropCheck) WithChildren(children ...sql.Node) (sql.Node, error) {
 	}
 	return NewAlterDropCheck(children[0], p.Name), nil
 }
-func (p *DropCheck) Schema() sql.Schema { return nil }
+
+func (p *DropCheck) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
 
 func (p DropCheck) String() string {
 	pr := sql.NewTreePrinter()
@@ -228,6 +235,11 @@ func NewCheckDefinition(ctx *sql.Context, check *sql.CheckConstraint) (*sql.Chec
 type DropConstraint struct {
 	UnaryNode
 	Name string
+}
+
+// Schema implements sql.Node
+func (d *DropConstraint) Schema() sql.Schema {
+	return sql.OkResultSchema
 }
 
 func (d *DropConstraint) String() string {

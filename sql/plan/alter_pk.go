@@ -67,7 +67,7 @@ func (a AlterPK) String() string {
 }
 
 func (a AlterPK) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 func (a AlterPK) Children() []sql.Node {
@@ -107,12 +107,12 @@ func (a AlterPK) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) {
 	switch a.Action {
 	case PrimaryKeyAction_Create:
 		if hasPrimaryKeys(pkAlterable) {
-			return sql.RowsToRowIter(), sql.ErrMultiplePrimaryKeysDefined.New()
+			return nil, sql.ErrMultiplePrimaryKeysDefined.New()
 		}
 
 		for _, c := range a.Columns {
 			if !pkAlterable.Schema().Contains(c.Name, pkAlterable.Name()) {
-				return sql.RowsToRowIter(), sql.ErrKeyColumnDoesNotExist.New(c.Name)
+				return nil, sql.ErrKeyColumnDoesNotExist.New(c.Name)
 			}
 		}
 
@@ -125,7 +125,7 @@ func (a AlterPK) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) {
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), nil
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func hasPrimaryKeys(table sql.Table) bool {

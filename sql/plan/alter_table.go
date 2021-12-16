@@ -56,11 +56,8 @@ func (r *RenameTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 		return nil, ErrRenameTableNotSupported.New(r.db.Name())
 	}
 
-	var err error
 	for i, oldName := range r.oldNames {
-		var tbl sql.Table
-		var ok bool
-		tbl, ok, err = r.db.GetTableInsensitive(ctx, oldName)
+		tbl, ok, err := r.db.GetTableInsensitive(ctx, oldName)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +72,7 @@ func (r *RenameTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 		}
 	}
 
-	return sql.RowsToRowIter(), err
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (r *RenameTable) WithChildren(children ...sql.Node) (sql.Node, error) {
@@ -144,7 +141,12 @@ func (a *AddColumn) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) 
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), alterable.AddColumn(ctx, a.column, a.order)
+	err = alterable.AddColumn(ctx, a.column, a.order)
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), err
 }
 
 func (a *AddColumn) Expressions() []sql.Expression {
@@ -277,7 +279,12 @@ func (d *DropColumn) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error)
 		}
 	}
 
-	return sql.RowsToRowIter(), alterable.DropColumn(ctx, d.column)
+	err = alterable.DropColumn(ctx, d.column)
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (d *DropColumn) Schema() sql.Schema {
@@ -357,7 +364,12 @@ func (r *RenameColumn) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, erro
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), alterable.ModifyColumn(ctx, r.ColumnName, col, nil)
+	err = alterable.ModifyColumn(ctx, r.ColumnName, col, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (r *RenameColumn) Children() []sql.Node {
@@ -450,7 +462,12 @@ func (m *ModifyColumn) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, erro
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), alterable.ModifyColumn(ctx, m.columnName, m.column, m.order)
+	err = alterable.ModifyColumn(ctx, m.columnName, m.column, m.order)
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (m *ModifyColumn) Children() []sql.Node {

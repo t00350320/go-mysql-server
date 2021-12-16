@@ -56,7 +56,7 @@ func (d *DeclareCondition) String() string {
 
 // Schema implements the sql.Node interface.
 func (d *DeclareCondition) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 // Children implements the sql.Node interface.
@@ -71,5 +71,6 @@ func (d *DeclareCondition) WithChildren(children ...sql.Node) (sql.Node, error) 
 
 // RowIter implements the sql.Node interface.
 func (d *DeclareCondition) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) {
-	return sql.RowsToRowIter(), nil
+	// All logic is done in the analyzer, so this is a no-op
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }

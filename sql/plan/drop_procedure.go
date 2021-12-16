@@ -56,7 +56,7 @@ func (d *DropProcedure) String() string {
 
 // Schema implements the sql.Node interface.
 func (d *DropProcedure) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 // Children implements the sql.Node interface.
@@ -80,7 +80,8 @@ func (d *DropProcedure) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, err
 	} else if err != nil {
 		return nil, err
 	}
-	return sql.RowsToRowIter(), nil
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the sql.Node interface.

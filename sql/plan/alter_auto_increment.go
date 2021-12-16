@@ -59,7 +59,7 @@ func (p *AlterAutoIncrement) RowIter(ctx *sql.Context, _ sql.Row) (sql.RowIter, 
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), nil
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the Node interface.
@@ -70,7 +70,9 @@ func (p *AlterAutoIncrement) WithChildren(children ...sql.Node) (sql.Node, error
 	return NewAlterAutoIncrement(children[0], p.autoVal), nil
 }
 
-func (p *AlterAutoIncrement) Schema() sql.Schema { return nil }
+func (p *AlterAutoIncrement) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
 
 func (p AlterAutoIncrement) String() string {
 	pr := sql.NewTreePrinter()

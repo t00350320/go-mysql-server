@@ -67,7 +67,7 @@ func (c *CreateTrigger) Resolved() bool {
 }
 
 func (c *CreateTrigger) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 func (c *CreateTrigger) Children() []sql.Node {

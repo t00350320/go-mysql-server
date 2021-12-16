@@ -92,7 +92,7 @@ func NewAlterRenameIndex(table sql.Node, fromIndexName, toIndexName string) *Alt
 
 // Schema implements the Node interface.
 func (p *AlterIndex) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 func getIndexAlterable(node sql.Node) (sql.IndexAlterableTable, error) {
@@ -166,7 +166,7 @@ func (p *AlterIndex) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error)
 		return nil, err
 	}
 
-	return sql.RowsToRowIter(), nil
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the Node interface.

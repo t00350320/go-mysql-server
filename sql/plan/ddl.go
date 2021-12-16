@@ -73,7 +73,9 @@ func (c *ddlNode) Database() sql.Database {
 }
 
 // Schema implements the Node interface.
-func (*ddlNode) Schema() sql.Schema { return nil }
+func (*ddlNode) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
 
 // Children implements the Node interface.
 func (c *ddlNode) Children() []sql.Node { return nil }
@@ -197,7 +199,7 @@ func (c *CreateTable) WithDatabase(db sql.Database) (sql.Node, error) {
 
 // Schema implements the sql.Node interface.
 func (c *CreateTable) Schema() sql.Schema {
-	return sql.Schema{}
+	return sql.OkResultSchema
 }
 
 func (c *CreateTable) PkSchema() sql.PrimaryKeySchema {
@@ -219,39 +221,39 @@ func (c *CreateTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 	if c.temporary == IsTempTable {
 		creatable, ok := c.db.(sql.TemporaryTableCreator)
 		if !ok {
-			return sql.RowsToRowIter(), sql.ErrTemporaryTableNotSupported.New()
+			return nil, sql.ErrTemporaryTableNotSupported.New()
 		}
 
 		if err := c.validateDefaultPosition(); err != nil {
-			return sql.RowsToRowIter(), err
+			return nil, err
 		}
 
 		err = creatable.CreateTemporaryTable(ctx, c.name, c.CreateSchema)
 	} else {
 		creatable, ok := c.db.(sql.TableCreator)
 		if !ok {
-			return sql.RowsToRowIter(), ErrCreateTableNotSupported.New(c.db.Name())
+			return nil, ErrCreateTableNotSupported.New(c.db.Name())
 		}
 
 		if err := c.validateDefaultPosition(); err != nil {
-			return sql.RowsToRowIter(), err
+			return nil, err
 		}
 
 		err = creatable.CreateTable(ctx, c.name, c.CreateSchema)
 	}
 
 	if err != nil && !(sql.ErrTableAlreadyExists.Is(err) && (c.ifNotExists == IfNotExists)) {
-		return sql.RowsToRowIter(), err
+		return nil, err
 	}
 
 	//TODO: in the event that foreign keys or indexes aren't supported, you'll be left with a created table and no foreign keys/indexes
 	//this also means that if a foreign key or index fails, you'll only have what was declared up to the failure
 	tableNode, ok, err := c.db.GetTableInsensitive(ctx, c.name)
 	if err != nil {
-		return sql.RowsToRowIter(), err
+		return nil, err
 	}
 	if !ok {
-		return sql.RowsToRowIter(), ErrTableCreatedNotFound.New()
+		return nil, ErrTableCreatedNotFound.New()
 	}
 
 	var nonPrimaryIdxes []*IndexDefinition
@@ -264,25 +266,25 @@ func (c *CreateTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 	if len(nonPrimaryIdxes) > 0 {
 		err = c.createIndexes(ctx, tableNode, nonPrimaryIdxes)
 		if err != nil {
-			return sql.RowsToRowIter(), err
+			return nil, err
 		}
 	}
 
 	if len(c.fkDefs) > 0 {
 		err = c.createForeignKeys(ctx, tableNode)
 		if err != nil {
-			return sql.RowsToRowIter(), err
+			return nil, err
 		}
 	}
 
 	if len(c.chDefs) > 0 {
 		err = c.createChecks(ctx, tableNode)
 		if err != nil {
-			return sql.RowsToRowIter(), err
+			return nil, err
 		}
 	}
 
-	return sql.RowsToRowIter(), nil
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 func (c *CreateTable) createIndexes(ctx *sql.Context, tableNode sql.Table, idxes []*IndexDefinition) error {
@@ -636,7 +638,7 @@ func (d *DropTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) 
 		}
 	}
 
-	return sql.RowsToRowIter(), err
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the Node interface.

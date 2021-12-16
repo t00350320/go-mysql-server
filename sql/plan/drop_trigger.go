@@ -56,7 +56,7 @@ func (d *DropTrigger) String() string {
 
 // Schema implements the sql.Node interface.
 func (d *DropTrigger) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 // Children implements the sql.Node interface.
@@ -69,18 +69,19 @@ func (d *DropTrigger) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 	triggerDb, ok := d.db.(sql.TriggerDatabase)
 	if !ok {
 		if d.IfExists {
-			return sql.RowsToRowIter(), nil
+			return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 		} else {
 			return nil, sql.ErrTriggerDoesNotExist.New(d.TriggerName)
 		}
 	}
 	err := triggerDb.DropTrigger(ctx, d.TriggerName)
 	if d.IfExists && sql.ErrTriggerDoesNotExist.Is(err) {
-		return sql.RowsToRowIter(), nil
+		return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 	} else if err != nil {
 		return nil, err
 	}
-	return sql.RowsToRowIter(), nil
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(1))), nil
 }
 
 // WithChildren implements the sql.Node interface.

@@ -125,7 +125,7 @@ func (dvs *DropView) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error)
 	for _, child := range dvs.children {
 		drop, ok := child.(*SingleDropView)
 		if !ok {
-			return sql.RowsToRowIter(), errDropViewChild.New()
+			return nil, errDropViewChild.New()
 		}
 
 		if dropper, ok := drop.database.(sql.ViewDatabase); ok {
@@ -133,23 +133,25 @@ func (dvs *DropView) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error)
 			if err != nil {
 				allowedError := dvs.ifExists && sql.ErrViewDoesNotExist.Is(err)
 				if !allowedError {
-					return sql.RowsToRowIter(), err
+					return nil, err
 				}
 			}
 		} else {
 			err := ctx.GetViewRegistry().Delete(drop.database.Name(), drop.viewName)
 			allowedError := dvs.ifExists && sql.ErrViewDoesNotExist.Is(err)
 			if !allowedError {
-				return sql.RowsToRowIter(), err
+				return nil, err
 			}
 		}
 	}
 
-	return sql.RowsToRowIter(), nil
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(1))), nil
 }
 
-// Schema implements the Node interface. It always returns nil.
-func (dvs *DropView) Schema() sql.Schema { return nil }
+// Schema implements the Node interface
+func (dvs *DropView) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
 
 // String implements the fmt.Stringer interface, using sql.TreePrinter to
 // generate the string.

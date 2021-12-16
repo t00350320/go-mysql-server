@@ -80,7 +80,7 @@ func (c *CreateProcedure) Resolved() bool {
 
 // Schema implements the sql.Node interface.
 func (c *CreateProcedure) Schema() sql.Schema {
-	return nil
+	return sql.OkResultSchema
 }
 
 // Children implements the sql.Node interface.

@@ -81,6 +81,10 @@ func NewAlterDefaultSet(table sql.Node, columnName string, defVal *sql.ColumnDef
 	}
 }
 
+func (d *AlterDefaultSet) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
+
 // String implements the sql.Node interface.
 func (d *AlterDefaultSet) String() string {
 	return fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s", d.UnaryNode.Child.String(), d.ColumnName, d.Default.String())
@@ -105,7 +109,13 @@ func (d *AlterDefaultSet) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, e
 	}
 	newCol := &(*col)
 	newCol.Default = d.Default
-	return sql.RowsToRowIter(), alterable.ModifyColumn(ctx, d.ColumnName, newCol, nil)
+
+	err = alterable.ModifyColumn(ctx, d.ColumnName, newCol, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the sql.Node interface.
@@ -149,6 +159,10 @@ func NewAlterDefaultDrop(table sql.Node, columnName string) *AlterDefaultDrop {
 	}
 }
 
+func (d *AlterDefaultDrop) Schema() sql.Schema {
+	return sql.OkResultSchema
+}
+
 // String implements the sql.Node interface.
 func (d *AlterDefaultDrop) String() string {
 	return fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", d.UnaryNode.Child.String(), d.ColumnName)
@@ -173,7 +187,13 @@ func (d *AlterDefaultDrop) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, 
 	}
 	newCol := &(*col)
 	newCol.Default = nil
-	return sql.RowsToRowIter(), alterable.ModifyColumn(ctx, d.ColumnName, newCol, nil)
+
+	err = alterable.ModifyColumn(ctx, d.ColumnName, newCol, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.RowsToRowIter(sql.NewRow(sql.NewOkResult(0))), nil
 }
 
 // WithChildren implements the sql.Node interface.
