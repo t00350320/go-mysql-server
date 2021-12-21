@@ -117,7 +117,7 @@ func createIndexes(t *testing.T, harness Harness, engine *sqle.Engine) {
 func createForeignKeys(t *testing.T, harness Harness, engine *sqle.Engine) {
 	if fkh, ok := harness.(ForeignKeyHarness); ok && fkh.SupportsForeignKeys() {
 		ctx := NewContextWithEngine(harness, engine)
-		TestQueryWithContext(t, ctx, engine, "ALTER TABLE fk_tbl ADD CONSTRAINT fk1 FOREIGN KEY (a,b) REFERENCES mytable (i,s) ON DELETE CASCADE", nil, nil, nil)
+		RunQueryWithContext(t, engine, ctx,"ALTER TABLE fk_tbl ADD CONSTRAINT fk1 FOREIGN KEY (a,b) REFERENCES mytable (i,s) ON DELETE CASCADE")
 	}
 }
 

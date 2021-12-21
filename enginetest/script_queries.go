@@ -590,7 +590,7 @@ var ScriptTests = []ScriptTest{
 			},
 			{
 				Query:    "alter table b add column y int null",
-				Expected: []sql.Row{},
+				Expected: []sql.Row{{sql.NewOkResult(0)}},
 			},
 			{
 				Query:    "select row_count()",
@@ -876,7 +876,7 @@ var ScriptTests = []ScriptTest{
 			},
 			{
 				Query:    "ALTER TABLE test ALTER v1 SET DEFAULT (CONVERT('42', SIGNED));",
-				Expected: []sql.Row{},
+				Expected: []sql.Row{{sql.NewOkResult(0)}},
 			},
 			{
 				Query:    "INSERT INTO test (pk) VALUES (2);",
