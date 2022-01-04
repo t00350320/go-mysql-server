@@ -550,14 +550,11 @@ func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn, errCh
 		return
 	}
 
-	timer := time.NewTimer(tcpCheckerSleepDuration)
-	defer timer.Stop()
-
 	for {
 		select {
 		case <-quit:
 			return
-		case <-timer.C:
+		default:
 		}
 
 		st, err := sockstate.GetInodeSockState(t.Port, inode)
@@ -572,7 +569,7 @@ func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn, errCh
 		default: // Established
 			// (juanjux) this check is not free, each iteration takes about 9 milliseconds to run on my machine
 			// thus the small wait between checks
-			timer.Reset(tcpCheckerSleepDuration)
+			time.Sleep(tcpCheckerSleepDuration)
 		}
 	}
 }
