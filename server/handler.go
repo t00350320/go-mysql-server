@@ -378,10 +378,10 @@ func (h *Handler) doQuery(
 		}
 	})
 
-	pollCtx, cancelF := ctx.NewSubContext()
-	eg.Go(func() error {
-		return h.pollForClosedConnection(pollCtx, c)
-	})
+//	pollCtx, cancelF := ctx.NewSubContext()
+//	eg.Go(func() error {
+//		return h.pollForClosedConnection(pollCtx, c)
+//	})
 
 	// Default waitTime is one minute if there is no timeout configured, in which case
 	// it will loop to iterate again unless the socket died by the OS timeout or other problems.
@@ -397,7 +397,7 @@ func (h *Handler) doQuery(
 
 	// Read rows off the row iterator and send them to the row channel.
 	eg.Go(func() error {
-		defer cancelF()
+//		defer cancelF()
 		for {
 			if r == nil {
 				r = &sqltypes.Result{Fields: schemaToFields(schema)}
