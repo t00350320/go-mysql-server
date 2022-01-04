@@ -336,9 +336,6 @@ func (h *Handler) doQuery(
 		}
 	}()
 
-	oCtx := ctx
-	eg, ctx := ctx.NewErrgroup()
-
 	schema, rows, err := h.e.QueryNodeWithBindings(ctx, query, parsed, sqlBindings)
 	if err != nil {
 		ctx.GetLogger().WithError(err).Warn("error running query")
@@ -348,40 +345,27 @@ func (h *Handler) doQuery(
 	var r *sqltypes.Result
 	var proccesedAtLeastOneBatch bool
 
-	// Reads rows from the row reading goroutine
 	rowChan := make(chan sql.Row)
+	errChan := make(chan error)
+	quit := make(chan struct{})
 
-	eg.Go(func() error {
-		defer close(rowChan)
+	go func() {
 		for {
 			select {
-			case <-ctx.Done():
-				return nil
+			case <-quit:
+				return
 			default:
 				row, err := rows.Next(ctx)
 				if err != nil {
-					if err == io.EOF {
-						return rows.Close(ctx)
-					}
-					cerr := rows.Close(ctx)
-					if cerr != nil {
-						ctx.GetLogger().WithError(cerr).Warn("error closing row iter")
-					}
-					return err
+					errChan <- err
+					return
 				}
-				select {
-				case rowChan <- row:
-				case <-ctx.Done():
-					return nil
-				}
+				rowChan <- row
 			}
 		}
-	})
+	}()
 
-	pollCtx, cancelF := ctx.NewSubContext()
-	eg.Go(func() error {
-		return h.pollForClosedConnection(pollCtx, c)
-	})
+	go h.pollForClosedConnection(ctx, c, errChan, quit)
 
 	// Default waitTime is one minute if there is no timeout configured, in which case
 	// it will loop to iterate again unless the socket died by the OS timeout or other problems.
@@ -395,66 +379,69 @@ func (h *Handler) doQuery(
 	timer := time.NewTimer(waitTime)
 	defer timer.Stop()
 
-	// Read rows off the row iterator and send them to the row channel.
-	eg.Go(func() error {
-		defer cancelF()
-		for {
-			if r == nil {
-				r = &sqltypes.Result{Fields: schemaToFields(schema)}
-			}
-
-			if r.RowsAffected == rowsBatch {
-				if err := callback(r, more); err != nil {
-					return err
-				}
-				r = nil
-				proccesedAtLeastOneBatch = true
-				continue
-			}
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case row, ok := <-rowChan:
-				if !ok {
-					return nil
-				}
-				if sql.IsOkResult(row) {
-					if len(r.Rows) > 0 {
-						panic("Got OkResult mixed with RowResult")
-					}
-					r = resultFromOkResult(row[0].(sql.OkResult))
-					continue
-				}
-
-				outputRow, err := rowToSQL(schema, row)
-				if err != nil {
-					return err
-				}
-
-				ctx.GetLogger().Tracef("spooling result row %s", outputRow)
-				r.Rows = append(r.Rows, outputRow)
-				r.RowsAffected++
-			case <-timer.C:
-				if h.readTimeout != 0 {
-					// Cancel and return so Vitess can call the CloseConnection callback
-					ctx.GetLogger().Tracef("connection timeout")
-					return ErrRowTimeout.New()
-				}
-			}
-			if !timer.Stop() {
-				<-timer.C
-			}
-			timer.Reset(waitTime)
+rowLoop:
+	for {
+		// Read rows off the row iterator and send them to the row channel.
+		if r == nil {
+			r = &sqltypes.Result{Fields: schemaToFields(schema)}
 		}
-	})
 
-	err = eg.Wait()
+		if r.RowsAffected == rowsBatch {
+			if err := callback(r, more); err != nil {
+				close(quit)
+				return remainder, err
+			}
+			r = nil
+			proccesedAtLeastOneBatch = true
+			continue
+		}
+
+		select {
+		case err = <-errChan:
+			if err == io.EOF {
+				break rowLoop
+			}
+			close(quit)
+			return remainder, err
+		case row := <-rowChan:
+			if sql.IsOkResult(row) {
+				if len(r.Rows) > 0 {
+					panic("Got OkResult mixed with RowResult")
+				}
+				r = resultFromOkResult(row[0].(sql.OkResult))
+				break rowLoop
+			}
+
+			outputRow, err := rowToSQL(schema, row)
+			if err != nil {
+				close(quit)
+				return remainder, err
+			}
+
+			ctx.GetLogger().Tracef("spooling result row %s", outputRow)
+			r.Rows = append(r.Rows, outputRow)
+			r.RowsAffected++
+		case <-timer.C:
+			if h.readTimeout != 0 {
+				// Cancel and return so Vitess can call the CloseConnection callback
+				ctx.GetLogger().Tracef("connection timeout")
+				close(quit)
+				return remainder, ErrRowTimeout.New()
+			}
+		}
+		if !timer.Stop() {
+			<-timer.C
+		}
+		timer.Reset(waitTime)
+	}
+
+	close(quit)
+
+	err = rows.Close(ctx)
 	if err != nil {
 		ctx.GetLogger().WithError(err).Warn("error running query")
 		return remainder, err
 	}
-	ctx = oCtx
 
 	if err = setConnStatusFlags(ctx, c); err != nil {
 		return remainder, err
@@ -542,11 +529,11 @@ func (h *Handler) errorWrappedDoQuery(
 // Periodically polls the connection socket to determine if it is has been closed by the client, returning an error
 // if it has been. Meant to be run in an errgroup from the query handler routine. Returns immediately with no error
 // on platforms that can't support TCP socket checks.
-func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn) error {
+func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn, errChan chan error, quit chan struct{}) {
 	tcpConn, ok := maybeGetTCPConn(c.Conn)
 	if !ok {
 		ctx.GetLogger().Trace("Connection checker exiting, connection isn't TCP")
-		return nil
+		return
 	}
 
 	inode, err := sockstate.GetConnInode(tcpConn)
@@ -554,13 +541,13 @@ func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn) error
 		if !sockstate.ErrSocketCheckNotImplemented.Is(err) {
 			ctx.GetLogger().Trace("Connection checker exiting, connection isn't TCP")
 		}
-		return nil
+		return
 	}
 
 	t, ok := tcpConn.LocalAddr().(*net.TCPAddr)
 	if !ok {
 		ctx.GetLogger().Trace("Connection checker exiting, could not get local port")
-		return nil
+		return
 	}
 
 	timer := time.NewTimer(tcpCheckerSleepDuration)
@@ -568,8 +555,8 @@ func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn) error
 
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
+		case <-quit:
+			return
 		case <-timer.C:
 		}
 
@@ -577,10 +564,11 @@ func (h *Handler) pollForClosedConnection(ctx *sql.Context, c *mysql.Conn) error
 		switch st {
 		case sockstate.Broken:
 			ctx.GetLogger().Warn("socket state is broken, returning error")
-			return ErrConnectionWasClosed.New()
+			errChan <- ErrConnectionWasClosed.New()
+			return
 		case sockstate.Error:
 			ctx.GetLogger().WithError(err).Warn("Connection checker exiting, got err checking sockstate")
-			return nil
+			return
 		default: // Established
 			// (juanjux) this check is not free, each iteration takes about 9 milliseconds to run on my machine
 			// thus the small wait between checks
