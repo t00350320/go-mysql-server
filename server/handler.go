@@ -429,9 +429,9 @@ rowLoop:
 				return remainder, ErrRowTimeout.New()
 			}
 		}
-		if !timer.Stop() {
-			<-timer.C
-		}
+//		if !timer.Stop() {
+//			<-timer.C
+//		}
 		timer.Reset(waitTime)
 	}
 
