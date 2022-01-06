@@ -71,6 +71,15 @@ func (l *Last) NewBuffer() (sql.AggregationBuffer, error) {
 	return &lastBuffer{nil, bufferChild}, nil
 }
 
+// NewEvalable creates a new buffer to compute the result.
+func (l *Last) NewEvalable() (sql.WindowFunction, error) {
+	c, err := expression.Clone(l.UnaryExpression.Child)
+	if err != nil {
+		return nil, err
+	}
+	return NewLastAgg(c), nil
+}
+
 // Eval implements the sql.Expression interface.
 func (l *Last) Eval(ctx *sql.Context, row sql.Row) (interface{}, error) {
 	return nil, ErrEvalUnsupportedOnAggregation.New("Last")

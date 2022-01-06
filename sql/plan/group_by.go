@@ -97,12 +97,32 @@ func (g *GroupBy) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error) {
 		return nil, err
 	}
 
-	var iter sql.RowIter
-	if len(g.GroupByExprs) == 0 {
-		iter = newGroupByIter(g.SelectedExprs, i)
-	} else {
-		iter = newGroupByGroupingIter(ctx, g.SelectedExprs, g.GroupByExprs, i)
+	//var iter sql.RowIter
+	//if len(g.GroupByExprs) == 0 {
+	//	iter = newGroupByIter(g.SelectedExprs, i)
+	//} else {
+	//	iter = newGroupByGroupingIter(ctx, g.SelectedExprs, g.GroupByExprs, i)
+	//}
+	//
+	aggs := make([]aggregation.Aggregation, len(g.SelectedExprs))
+	for i, e := range g.SelectedExprs {
+		switch a := e.(type) {
+		case sql.EvalableAggregation:
+			fn, err := a.NewEvalable()
+			if err != nil {
+				return nil, err
+			}
+			aggs[i] = aggregation.NewAggregation(fn, aggregation.NewPartitionFramer())
+		default:
+			fn, err := aggregation.NewLast(a).NewEvalable()
+			if err != nil {
+				return nil, err
+			}
+			aggs[i] = aggregation.NewAggregation(fn, aggregation.NewPartitionFramer())
+		}
 	}
+	iter := aggregation.NewWindowBlockIter(g.GroupByExprs, nil, aggs, i)
+	iter.SetGroupBy()
 
 	return sql.NewSpanIter(span, iter), nil
 }

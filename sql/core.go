@@ -106,6 +106,31 @@ type Aggregation interface {
 	NewBuffer() (AggregationBuffer, error)
 }
 
+// Every WindowFunction in a block reuses the same buffer.
+// TODO: is the output buffer a separate struct?
+type WindowBuffer []Row
+
+// [Start, End) range, where [Start] is inclusive, and [End] is exclusive
+type WindowInterval struct {
+	Start, End int
+}
+
+type WindowFunction interface {
+	// startPartition resets the internal fn state
+	StartPartition(*Context, WindowInterval, WindowBuffer) error
+	// certain WindowAgg functions can perform linear updates between the current
+	// and previous states
+	NewSlidingFrameInterval(added, dropped WindowInterval)
+	//
+	Compute(*Context, WindowInterval, WindowBuffer) interface{}
+}
+
+type EvalableAggregation interface {
+	Expression
+	// NewBuffer creates a new aggregation buffer and returns it as a Row.
+	NewEvalable() (WindowFunction, error)
+}
+
 type AggregationBuffer interface {
 	Disposable
 
@@ -135,6 +160,23 @@ type WindowAggregation interface {
 	Finish(ctx *Context, buffer Row) error
 	// EvalRow returns the value of the expression for the row with the index given
 	EvalRow(i int, buffer Row) (interface{}, error)
+}
+
+// WindowFramer is responsible for tracking window frame indices for partition rows.
+// WindowFramer is aware of the framing strategy (offsets, ranges, etc),
+// and is responsible for returning a WindowInterval for each partition row.
+type WindowFramer interface {
+	// reset internal state
+	StartPartition(WindowInterval)
+	// process next row, recalculate frame
+	Next() (WindowInterval, error)
+	// interval start index
+	FirstIdx() int
+	// interval end index
+	LastIdx() int
+	Interval() (WindowInterval, error)
+	// TODO sliding window optimization tracks the current interval, the new added interval, and the deleted interval
+	SlidingInterval(ctx Context) (WindowInterval, WindowInterval, WindowInterval)
 }
 
 // Node is a node in the execution plan tree.

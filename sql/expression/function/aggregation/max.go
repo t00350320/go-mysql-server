@@ -81,6 +81,15 @@ func (m *Max) NewBuffer() (sql.AggregationBuffer, error) {
 	return &maxBuffer{nil, bufferChild}, nil
 }
 
+// NewEvaluatable initializes a evaluatable Max aggregation function
+func (m *Max) NewEvalable() (sql.WindowFunction, error) {
+	c, err := expression.Clone(m.UnaryExpression.Child)
+	if err != nil {
+		return nil, err
+	}
+	return NewMaxAgg(c), nil
+}
+
 // Eval implements the Expression interface.
 func (m *Max) Eval(ctx *sql.Context, row sql.Row) (interface{}, error) {
 	return nil, ErrEvalUnsupportedOnAggregation.New("Max")

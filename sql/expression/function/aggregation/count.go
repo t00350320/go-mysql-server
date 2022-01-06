@@ -58,6 +58,15 @@ func (c *Count) NewBuffer() (sql.AggregationBuffer, error) {
 	return &countBuffer{0, bufferChild}, nil
 }
 
+// NewEvalable creates a new buffer for the aggregation.
+func (c *Count) NewEvalable() (sql.WindowFunction, error) {
+	child, err := expression.Clone(c.UnaryExpression.Child)
+	if err != nil {
+		return nil, err
+	}
+	return NewCountAgg(child), nil
+}
+
 // Type returns the type of the result.
 func (c *Count) Type() sql.Type {
 	return sql.Int64
