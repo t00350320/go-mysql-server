@@ -116,6 +116,8 @@ type WindowInterval struct {
 }
 
 type WindowFunction interface {
+	Disposable
+
 	// startPartition resets the internal fn state
 	StartPartition(*Context, WindowInterval, WindowBuffer) error
 	// certain WindowAgg functions can perform linear updates between the current
@@ -127,7 +129,8 @@ type WindowFunction interface {
 
 type EvalableAggregation interface {
 	Expression
-	// NewBuffer creates a new aggregation buffer and returns it as a Row.
+
+	// NewEvalable creates a new aggregation buffer and returns it as a Row.
 	NewEvalable() (WindowFunction, error)
 }
 

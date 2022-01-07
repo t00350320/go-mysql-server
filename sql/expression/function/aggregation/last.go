@@ -29,6 +29,7 @@ type Last struct {
 
 var _ sql.FunctionExpression = (*Last)(nil)
 var _ sql.Aggregation = (*Last)(nil)
+var _ sql.EvalableAggregation = (*Last)(nil)
 
 // NewLast returns a new Last node.
 func NewLast(e sql.Expression) *Last {

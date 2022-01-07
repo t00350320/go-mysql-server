@@ -30,9 +30,11 @@ type Count struct {
 
 var _ sql.FunctionExpression = (*Count)(nil)
 var _ sql.Aggregation = (*Count)(nil)
+var _ sql.EvalableAggregation = (*Count)(nil)
 
 var _ sql.FunctionExpression = (*CountDistinct)(nil)
 var _ sql.Aggregation = (*CountDistinct)(nil)
+var _ sql.EvalableAggregation = (*CountDistinct)(nil)
 
 // NewCount creates a new Count node.
 func NewCount(e sql.Expression) *Count {
@@ -116,6 +118,15 @@ func NewCountDistinct(e sql.Expression) *CountDistinct {
 // NewBuffer creates a new buffer for the aggregation.
 func (c *CountDistinct) NewBuffer() (sql.AggregationBuffer, error) {
 	return &countDistinctBuffer{make(map[uint64]struct{}), c.Child}, nil
+}
+
+// NewEvalable creates a new buffer for the aggregation.
+func (c *CountDistinct) NewEvalable() (sql.WindowFunction, error) {
+	child, err := expression.Clone(c.UnaryExpression.Child)
+	if err != nil {
+		return nil, err
+	}
+	return NewCountDistinctAgg(child), nil
 }
 
 // Type returns the type of the result.

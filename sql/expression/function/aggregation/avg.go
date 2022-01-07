@@ -86,6 +86,21 @@ func (a *Avg) NewBuffer() (sql.AggregationBuffer, error) {
 	return &avgBuffer{sum, rows, bufferChild}, nil
 }
 
+// NewEvalable implements Aggregation interface.
+func (a *Avg) NewEvalable() (sql.WindowFunction, error) {
+	const (
+		sum  = float64(0)
+		rows = int64(0)
+	)
+
+	c, err := expression.Clone(a.UnaryExpression.Child)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAvgAgg(c), nil
+}
+
 type avgBuffer struct {
 	sum  float64
 	rows int64

@@ -79,6 +79,7 @@ type windowBlockIter struct {
 }
 
 var _ sql.RowIter = (*windowBlockIter)(nil)
+var _ sql.Disposable = (*windowBlockIter)(nil)
 
 func NewWindowBlockIter(partitionBy []sql.Expression, sortBy sql.SortFields, aggs []Aggregation, child sql.RowIter) *windowBlockIter {
 	return &windowBlockIter{
@@ -144,8 +145,15 @@ func (i *windowBlockIter) incrPos() {
 }
 
 func (i *windowBlockIter) Close(ctx *sql.Context) error {
+	i.Dispose()
 	i.input = nil
 	return i.child.Close(ctx)
+}
+
+func (i *windowBlockIter) Dispose() {
+	for _, a := range i.aggs {
+		a.fn.Dispose()
+	}
 }
 
 // initializeBuffers sorts the buffer by (WPK, WSK)

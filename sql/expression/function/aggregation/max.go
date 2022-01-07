@@ -30,6 +30,7 @@ type Max struct {
 
 var _ sql.FunctionExpression = (*Max)(nil)
 var _ sql.Aggregation = (*Max)(nil)
+var _ sql.EvalableAggregation = (*Max)(nil)
 
 // NewMax returns a new Max node.
 func NewMax(e sql.Expression) *Max {
