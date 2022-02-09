@@ -119,6 +119,7 @@ examples on how to connect to go-mysql-server using them.
 |`DATE_ADD(...)`| Adds the interval to the given date.|
 |`DATE_FORMAT(expr1, expr2)`| Format date as specified.|
 |`DATE_SUB(...)`| Subtracts the interval from the given date.|
+|`DATEDIFF(expr1, expr2)`| Gets difference between two dates in result of days.|
 |`DATETIME(...)`| Returns a DATETIME value for the expression given (e.g. the string '2020-01-02').|
 |`DAY(expr)`| Returns the day of the month (0-31).|
 |`DAYNAME(expr)`| Returns the name of the weekday.|
@@ -155,14 +156,19 @@ examples on how to connect to go-mysql-server using them.
 |`IS_USED_LOCK(expr)`| Returns whether the named lock is in use; return connection identifier if true.|
 |`IS_UUID(expr)`| Returns whether argument is a valid UUID.|
 |`ISNULL(expr)`| Returns whether a expr is null or not.|
+|`JSON_ARRAYAGG(expr)`| Returns result set as a single JSON array.|
+|`JSON_OBJECTAGG(expr1, expr2)`| Returns result set as a single JSON object.|
+|`LAG(...)`| Returns the value of the expression evaluated at the lag offset row|
 |`LAST(expr)`| Returns the last value in a sequence of elements of an aggregation.|
 |`LAST_INSERT_ID()`| Returns value of the AUTOINCREMENT column for the last INSERT.|
 |`LCASE(expr)`| Returns the string str with all characters in lower case.|
 |`LEAST(...)`| Returns the smaller numeric or string value.|
 |`LEFT(expr1, expr2)`| Returns the first N characters in the string given.|
 |`LENGTH(expr)`| Returns the length of the string in bytes.|
+|`LINESTRING(...)`| Returns a new linestring.|
 |`LN(expr)`| Returns the natural logarithm of X.|
 |`LOAD_FILE(expr)`| Returns a LoadFile object.|
+|`LOCATE(...)`| Returns the position of the first occurrence of a substring in a string.|
 |`LOG(...)`| If called with one parameter, this function returns the natural logarithm of X. If called with two parameters, this function returns the logarithm of X to the base B. If X is less than or equal to 0, or if B is less than or equal to 1, then NULL is returned.|
 |`LOG10(expr)`| Returns the base-10 logarithm of X.|
 |`LOG2(expr)`| Returns the base-2 logarithm of X.|
@@ -180,6 +186,8 @@ examples on how to connect to go-mysql-server using them.
 |`NOW(...)`| Returns the current timestamp.|
 |`NULLIF(expr1, expr2)`| Returns NULL if expr1 = expr2 is true, otherwise returns expr1.|
 |`PERCENT_RANK()`| Returns percentage rank value.|
+|`POINT(expr1, expr2)`| Returns a new point.|
+|`POLYGON(...)`| Returns a new polygon.|
 |`POW(expr1, expr2)`| Returns the value of X raised to the power of Y.|
 |`POWER(expr1, expr2)`| Returns the value of X raised to the power of Y.|
 |`RADIANS(expr)`| Returns the radian value of the degrees argument given.|
@@ -208,15 +216,38 @@ examples on how to connect to go-mysql-server using them.
 |`SOUNDEX(expr)`| Returns the soundex of a string.|
 |`SPLIT(expr1, expr2)`| Returns the parts of the string str split by the separator sep as a JSON array of strings.|
 |`SQRT(expr)`| Returns the square root of a nonnegative number X.|
+|`ST_ASBINARY(expr)`| Returns binary representation of given spatial type.|
+|`ST_ASGEOJSON(...)`| Returns a GeoJSON object from the geometry.|
+|`ST_ASTEXT(expr)`| Returns binary representation of given spatial type.|
+|`ST_ASWKB(expr)`| Returns binary representation of given spatial type.|
+|`ST_ASWKT(expr)`| Returns binary representation of given spatial type.|
+|`ST_DIMENSION(expr)`| Returns the dimension of the geometry given.|
+|`ST_GEOMFROMGEOJSON(...)`| Returns a GeoJSON object from the geometry.|
+|`ST_GEOMFROMTEXT(...)`| Returns a new point from a WKT string.|
+|`ST_GEOMFROMWKB(...)`| Returns a new geometry from a WKB string.|
+|`ST_GEOMFROMWKT(...)`| Returns a new point from a WKT string.|
+|`ST_LINEFROMWKB(...)`| Returns a new linestring from WKB format.|
+|`ST_LINEFROMWKT(...)`| Returns a new line from a WKT string.|
+|`ST_LONGITUDE(...)`| Returns the longitude value of given point. If given a second argument, returns a new point with second argument as longitude value.|
+|`ST_POINTFROMWKB(...)`| Returns a new point from WKB format.|
+|`ST_POINTFROMWKT(...)`| Returns a new point from a WKT string.|
+|`ST_POLYFROMWKB(...)`| Returns a new polygon from WKB format.|
+|`ST_POLYFROMWKT(...)`| Returns a new polygon from a WKT string.|
+|`ST_SRID(...)`| Returns the SRID value of given geometry object. If given a second argument, returns a new geometry object with second argument as SRID value.|
+|`ST_SWAPXY(expr)`| Returns the geometry with the x and y values swapped.|
+|`ST_X(...)`| Returns the x value of given point. If given a second argument, returns a new point with second argument as x value.|
+|`ST_Y(...)`| Returns the y value of given point. If given a second argument, returns a new point with second argument as y value.|
 |`STR_TO_DATE(...)`| Parses the date/datetime/timestamp expression according to the format specifier.|
 |`SUBSTR(...)`| Returns a substring from the provided string starting at pos with a length of len characters. If no len is provided, all characters from pos until the end will be taken.|
 |`SUBSTRING(...)`| Returns a substring from the provided string starting at pos with a length of len characters. If no len is provided, all characters from pos until the end will be taken.|
 |`SUBSTRING_INDEX(expr1, expr2, expr3)`| Returns a substring after count appearances of delim. If count is negative, counts from the right side of the string.|
-|`SUM(expr)`| Returns the sum of expr in all rows.|
+|`SUM(expr)`| Returns the sum of expr in all rows|
 |`TAN(expr)`| Returns the tangent of the expression given.|
+|`TIME_FORMAT(expr1, expr2)`| Format time as specified.|
 |`TIME_TO_SEC(expr)`| Returns the argument converted to seconds.|
 |`TIMEDIFF(expr1, expr2)`| Returns expr1 − expr2 expressed as a time value. expr1 and expr2 are time or date-and-time expressions, but both must be of the same type.|
 |`TIMESTAMP(...)`| Returns a timestamp value for the expression given (e.g. the string '2020-01-02').|
+|`TIMESTAMPDIFF(expr1, expr2, expr3)`| Gets difference between two dates in result of units specified.|
 |`TO_BASE64(expr)`| Encodes the string str in base64 format.|
 |`UCASE(expr)`| Converts string to uppercase.|
 |`UNHEX(expr)`| Returns a string containing hex representation of a number.|
