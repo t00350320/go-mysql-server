@@ -98,16 +98,17 @@ type PrivilegedDatabase struct {
 	//TODO: this should also handle views as the relevant privilege exists
 }
 
-var _ sql.Database = PrivilegedDatabase{}
-var _ sql.VersionedDatabase = PrivilegedDatabase{}
-var _ sql.TableCreator = PrivilegedDatabase{}
-var _ sql.TableDropper = PrivilegedDatabase{}
-var _ sql.TableRenamer = PrivilegedDatabase{}
-var _ sql.TriggerDatabase = PrivilegedDatabase{}
-var _ sql.StoredProcedureDatabase = PrivilegedDatabase{}
-var _ sql.TableCopierDatabase = PrivilegedDatabase{}
-var _ sql.ReadOnlyDatabase = PrivilegedDatabase{}
-var _ sql.TemporaryTableDatabase = PrivilegedDatabase{}
+var _ sql.Database = (*PrivilegedDatabase)(nil)
+var _ sql.VersionedDatabase = (*PrivilegedDatabase)(nil)
+var _ sql.TableCreator = (*PrivilegedDatabase)(nil)
+var _ sql.TableDropper = (*PrivilegedDatabase)(nil)
+var _ sql.TableRenamer = (*PrivilegedDatabase)(nil)
+var _ sql.TriggerDatabase = (*PrivilegedDatabase)(nil)
+var _ sql.StoredProcedureDatabase = (*PrivilegedDatabase)(nil)
+var _ sql.TableCopierDatabase = (*PrivilegedDatabase)(nil)
+var _ sql.ReadOnlyDatabase = (*PrivilegedDatabase)(nil)
+var _ sql.TemporaryTableDatabase = (*PrivilegedDatabase)(nil)
+var _ sql.DatabaseWrapper = (*PrivilegedDatabase)(nil)
 
 // NewPrivilegedDatabase returns a new PrivilegedDatabase.
 func NewPrivilegedDatabase(grantTables *GrantTables, db sql.Database) sql.Database {
@@ -324,8 +325,8 @@ func (pdb PrivilegedDatabase) GetAllTemporaryTables(ctx *sql.Context) ([]sql.Tab
 	return nil, nil
 }
 
-// Unwrap returns the wrapped sql.Database.
-func (pdb PrivilegedDatabase) Unwrap() sql.Database {
+// Underlying returns the wrapped sql.Database.
+func (pdb PrivilegedDatabase) Underlying() sql.Database {
 	return pdb.db
 }
 

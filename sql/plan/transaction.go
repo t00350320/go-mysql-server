@@ -47,7 +47,7 @@ func (s *StartTransaction) Database() sql.Database {
 
 func (s StartTransaction) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	s.db = database
 	return &s, nil
@@ -180,7 +180,7 @@ func (c *Commit) Database() sql.Database {
 
 func (c Commit) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	c.db = database
 	return &c, nil
@@ -287,7 +287,7 @@ func (r *Rollback) Database() sql.Database {
 
 func (r Rollback) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	r.db = database
 	return &r, nil
@@ -367,7 +367,7 @@ func (c *CreateSavepoint) Database() sql.Database {
 
 func (c CreateSavepoint) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	c.db = database
 	return &c, nil
@@ -444,7 +444,7 @@ func (r *RollbackSavepoint) Database() sql.Database {
 
 func (r RollbackSavepoint) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	r.db = database
 	return &r, nil
@@ -521,7 +521,7 @@ func (r *ReleaseSavepoint) Database() sql.Database {
 
 func (r ReleaseSavepoint) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	r.db = database
 	return &r, nil

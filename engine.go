@@ -336,7 +336,7 @@ func (e *Engine) beginTransaction(ctx *sql.Context, parsed sql.Node) (string, er
 			}
 
 			if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-				database = privilegedDatabase.Unwrap()
+				database = privilegedDatabase.Underlying()
 			}
 			tdb, ok := database.(sql.TransactionDatabase)
 			if ok {

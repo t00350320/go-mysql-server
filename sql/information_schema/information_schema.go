@@ -1932,7 +1932,7 @@ func viewsInDatabase(ctx *Context, db Database) ([]ViewDefinition, error) {
 	dbName := db.Name()
 
 	if privilegedDatabase, ok := db.(grant_tables.PrivilegedDatabase); ok {
-		db = privilegedDatabase.Unwrap()
+		db = privilegedDatabase.Underlying()
 	}
 	if vdb, ok := db.(ViewDatabase); ok {
 		dbViews, err := vdb.AllViews(ctx)

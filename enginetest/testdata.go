@@ -45,7 +45,7 @@ func includeTable(includedTables []string, tableName string) bool {
 func wrapInTransaction(t *testing.T, db sql.Database, harness Harness, fn func()) {
 	ctx := NewContext(harness).WithCurrentDB(db.Name())
 	if privilegedDatabase, ok := db.(grant_tables.PrivilegedDatabase); ok {
-		db = privilegedDatabase.Unwrap()
+		db = privilegedDatabase.Underlying()
 	}
 	if tdb, ok := db.(sql.TransactionDatabase); ok {
 		tx, err := tdb.StartTransaction(ctx, sql.ReadWrite)

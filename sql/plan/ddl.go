@@ -219,7 +219,7 @@ func (c *CreateTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 	if c.temporary == IsTempTable {
 		maybePrivDb := c.db
 		if privDb, ok := maybePrivDb.(grant_tables.PrivilegedDatabase); ok {
-			maybePrivDb = privDb.Unwrap()
+			maybePrivDb = privDb.Underlying()
 		}
 		creatable, ok := maybePrivDb.(sql.TemporaryTableCreator)
 		if !ok {
@@ -234,7 +234,7 @@ func (c *CreateTable) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error
 	} else {
 		maybePrivDb := c.db
 		if privDb, ok := maybePrivDb.(grant_tables.PrivilegedDatabase); ok {
-			maybePrivDb = privDb.Unwrap()
+			maybePrivDb = privDb.Underlying()
 		}
 		creatable, ok := maybePrivDb.(sql.TableCreator)
 		if !ok {

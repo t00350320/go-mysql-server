@@ -1459,7 +1459,7 @@ func getClient(query string) string {
 func TestViews(t *testing.T, harness Harness) {
 	e := NewEngine(t, harness)
 	defer e.Close()
-	ctx := NewContext(harness)
+	ctx := NewContextWithEngine(harness, e)
 
 	// nested views
 	RunQueryWithContext(t, e, ctx, "CREATE VIEW myview2 AS SELECT * FROM myview WHERE i = 1")
@@ -1496,7 +1496,8 @@ func TestVersionedViews(t *testing.T, harness Harness) {
 
 	e := NewEngine(t, harness)
 	defer e.Close()
-	ctx := NewContext(harness)
+	ctx := NewContextWithEngine(harness, e)
+
 	_, iter, err := e.Query(ctx, "CREATE VIEW myview1 AS SELECT * FROM myhistorytable")
 	require.NoError(err)
 	iter.Close(ctx)
@@ -4521,7 +4522,8 @@ func AssertErr(t *testing.T, e *sqle.Engine, harness Harness, query string, expe
 // AssertErrWithBindings asserts that the given query returns an error during its execution, optionally specifying a
 // type of error.
 func AssertErrWithBindings(t *testing.T, e *sqle.Engine, harness Harness, query string, bindings map[string]sql.Expression, expectedErrKind *errors.Kind, errStrs ...string) {
-	ctx := NewContext(harness)
+	ctx := NewContextWithEngine(harness, e)
+
 	sch, iter, err := e.QueryWithBindings(ctx, query, bindings)
 	if err == nil {
 		_, err = sql.RowIterToRows(ctx, sch, iter)
@@ -5169,19 +5171,25 @@ func NewContextWithClient(harness ClientHarness, client sql.Client) *sql.Context
 	return newContextSetup(harness.NewContextWithClient(client))
 }
 
+func contextWithView(ctx *sql.Context, db sql.Database) *sql.Context {
+	if wr, ok := db.(sql.DatabaseWrapper); ok {
+		db = wr.Underlying()
+	}
+	vdb, ok := db.(sql.ViewDatabase)
+	if !ok {
+		panic("implement sql.ViewDatabase to tests views")
+	}
+	if _, ok, _ := vdb.GetView(ctx, "myview"); !ok {
+		vdb.CreateView(ctx, "myview", "SELECT * FROM mytable")
+	}
+	return ctx
+}
+
 func newContextSetup(ctx *sql.Context) *sql.Context {
 	// Select a current database if there isn't one yet
 	if ctx.GetCurrentDatabase() == "" {
 		ctx.SetCurrentDatabase("mydb")
 	}
-
-	// Add our in-session view to the context
-	_ = ctx.GetViewRegistry().Register("mydb",
-		plan.NewSubqueryAlias(
-			"myview",
-			"SELECT * FROM mytable",
-			plan.NewProject([]sql.Expression{expression.NewStar()}, plan.NewUnresolvedTable("mytable", "mydb")),
-		).AsView())
 
 	ctx.ApplyOpts(sql.WithPid(atomic.AddUint64(&pid, 1)))
 
@@ -5220,7 +5228,9 @@ func NewBaseSession() *sql.BaseSession {
 }
 
 func NewContextWithEngine(harness Harness, engine *sqle.Engine) *sql.Context {
-	return NewContext(harness)
+	ctx := NewContext(harness)
+	db, _ := engine.Analyzer.Catalog.Database(ctx, ctx.GetCurrentDatabase())
+	return contextWithView(ctx, db)
 }
 
 // NewEngine creates test data and returns an engine using the harness provided.
@@ -5262,7 +5272,6 @@ func TestQuery(t *testing.T, harness Harness, e *sqle.Engine, q string, expected
 				t.Skipf("Skipping query %s", q)
 			}
 		}
-
 		ctx := NewContextWithEngine(harness, e)
 		TestQueryWithContext(t, ctx, e, q, expected, expectedCols, bindings)
 	})

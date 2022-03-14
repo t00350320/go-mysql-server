@@ -91,7 +91,7 @@ func (dv *SingleDropView) Database() sql.Database {
 // node with the specified database.
 func (dv *SingleDropView) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	newDrop := *dv
 	newDrop.database = database

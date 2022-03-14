@@ -53,7 +53,7 @@ func resolveViews(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Scope) (sql.
 
 			maybeVdb := db
 			if privilegedDatabase, ok := maybeVdb.(grant_tables.PrivilegedDatabase); ok {
-				maybeVdb = privilegedDatabase.Unwrap()
+				maybeVdb = privilegedDatabase.Underlying()
 			}
 			if vdb, ok := maybeVdb.(sql.ViewDatabase); ok {
 				viewDef, ok, err := vdb.GetView(ctx, viewName)
@@ -61,12 +61,14 @@ func resolveViews(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Scope) (sql.
 					return nil, err
 				}
 
+				if !ok {
+					return n, nil
+				}
 				if ok {
 					query, err := parse.Parse(ctx, viewDef)
 					if err != nil {
 						return nil, err
 					}
-
 					view = plan.NewSubqueryAlias(viewName, viewDef, query).AsView()
 				}
 			}

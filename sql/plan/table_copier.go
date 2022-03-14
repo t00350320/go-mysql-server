@@ -96,7 +96,7 @@ func (tc *TableCopier) createTableSelectCanBeCopied(tableNode sql.Table) bool {
 
 	// If the DB does not implement the TableCopierDatabase interface we cannot copy over the table.
 	if privDb, ok := tc.db.(grant_tables.PrivilegedDatabase); ok {
-		if _, ok := privDb.Unwrap().(sql.TableCopierDatabase); !ok {
+		if _, ok := privDb.Underlying().(sql.TableCopierDatabase); !ok {
 			return false
 		}
 	} else if _, ok := tc.db.(sql.TableCopierDatabase); !ok {

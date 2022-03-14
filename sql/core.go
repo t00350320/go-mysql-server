@@ -680,6 +680,13 @@ type VersionedDatabase interface {
 	GetTableNamesAsOf(ctx *Context, asOf interface{}) ([]string, error)
 }
 
+// DatabaseWrapper is a node that wraps the real Database. This is needed because
+// wrappers cannot implement some methods the table may implement.
+type DatabaseWrapper interface {
+	// Underlying returns the underlying Database.
+	Underlying() Database
+}
+
 type TransactionCharacteristic int
 
 const (

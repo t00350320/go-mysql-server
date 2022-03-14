@@ -38,18 +38,14 @@ func TestResolveViews(t *testing.T) {
 			plan.NewUnresolvedTable("mytable", ""),
 		),
 	)
-	view := sql.NewView("myview", viewDefinition, "select i from mytable")
 
+	sess := sql.NewBaseSession()
+	ctx := sql.NewContext(context.Background(), sql.WithSession(sess)).WithCurrentDB("mydb")
 	db := memory.NewDatabase("mydb")
-	viewReg := sql.NewViewRegistry()
-	err := viewReg.Register(db.Name(), view)
-	require.NoError(err)
+	db.CreateView(ctx, "myview", "select i from mytable")
 
 	a := NewBuilder(sql.NewDatabaseProvider(db)).AddPostAnalyzeRule(f.Name, f.Apply).Build()
 
-	sess := sql.NewBaseSession()
-	sess.SetViewRegistry(viewReg)
-	ctx := sql.NewContext(context.Background(), sql.WithSession(sess)).WithCurrentDB("mydb")
 	// AS OF expressions on a view should be pushed down to unresolved tables
 	var notAnalyzed sql.Node = plan.NewUnresolvedTable("myview", "")
 	analyzed, err := f.Apply(ctx, a, notAnalyzed, nil)
@@ -70,8 +66,8 @@ func TestResolveViews(t *testing.T) {
 	require.Equal(viewDefinitionWithAsOf, analyzed)
 
 	// Views that are defined with AS OF clauses cannot have an AS OF pushed down to them
-	viewWithAsOf := sql.NewView("viewWithAsOf", viewDefinitionWithAsOf, "select i from mytable as of '2019-01-01'")
-	err = viewReg.Register(db.Name(), viewWithAsOf)
+	db.CreateView(ctx, "viewWithAsOf", "select i from mytable as of '2019-01-01'")
+
 	require.NoError(err)
 
 	notAnalyzedAsOf = plan.NewUnresolvedTableAsOf("viewWithAsOf", "", expression.NewLiteral("2019-01-01", sql.LongText))

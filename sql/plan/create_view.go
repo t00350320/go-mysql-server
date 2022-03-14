@@ -146,7 +146,7 @@ func (cv *CreateView) Database() sql.Database {
 // node with the specified database.
 func (cv *CreateView) WithDatabase(database sql.Database) (sql.Node, error) {
 	if privilegedDatabase, ok := database.(grant_tables.PrivilegedDatabase); ok {
-		database = privilegedDatabase.Unwrap()
+		database = privilegedDatabase.Underlying()
 	}
 	newCreate := *cv
 	newCreate.database = database

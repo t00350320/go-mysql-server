@@ -124,7 +124,7 @@ func (p *ShowTables) RowIter(ctx *sql.Context, row sql.Row) (sql.RowIter, error)
 	// TODO: currently there is no way to see views AS OF a particular time
 	maybeVdb := p.db
 	if privilegedDatabase, ok := maybeVdb.(grant_tables.PrivilegedDatabase); ok {
-		maybeVdb = privilegedDatabase.Unwrap()
+		maybeVdb = privilegedDatabase.Underlying()
 	}
 	if vdb, ok := maybeVdb.(sql.ViewDatabase); ok {
 		views, err := vdb.AllViews(ctx)
