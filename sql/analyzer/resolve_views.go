@@ -152,13 +152,14 @@ func resolveViewDefinition(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Sco
 	defer span.Finish()
 
 	return plan.TransformUpCtx(n, nil, func(c plan.TransformContext) (sql.Node, error) {
-		switch c.Parent.(type) {
+		switch p := c.Parent.(type) {
 		case *plan.CreateView:
 			switch s := c.Node.(type) {
 			case *plan.SubqueryAlias:
-				err := updateTextDefinitionToFull(ctx, a, s)
-				if err != nil {
-					return nil, err
+				// updates TextDefinition in both child node and Definition member
+				newDef := updateTextDefinitionToFull(s)
+				if newDef != "" {
+					p.Definition.TextDefinition = newDef
 				}
 				return s, nil
 			}
@@ -167,14 +168,14 @@ func resolveViewDefinition(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Sco
 	})
 }
 
-func updateTextDefinitionToFull(ctx *sql.Context, a *Analyzer, sqa *plan.SubqueryAlias) error {
+func updateTextDefinitionToFull(sqa *plan.SubqueryAlias) string {
 	p, ok := sqa.Child.(*plan.Project)
 	if !ok {
-		return nil
+		return ""
 	}
 	rt, ok := p.Child.(*plan.ResolvedTable)
 	if !ok {
-		return nil
+		return ""
 	}
 	cols := make([]string, len(p.Projections))
 	for i, projection := range p.Projections {
@@ -194,5 +195,5 @@ func updateTextDefinitionToFull(ctx *sql.Context, a *Analyzer, sqa *plan.Subquer
 		rt.Database.Name(),
 		rt.Name(),
 	)
-	return nil
+	return sqa.TextDefinition
 }
