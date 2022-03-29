@@ -152,7 +152,7 @@ func resolveViewDefinition(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Sco
 	defer span.Finish()
 
 	return plan.TransformUpCtx(n, nil, func(c plan.TransformContext) (sql.Node, error) {
-		switch p := c.Parent.(type) {
+		switch c.Parent.(type) {
 		case *plan.CreateView:
 			switch s := c.Node.(type) {
 			case *plan.SubqueryAlias:
@@ -161,12 +161,9 @@ func resolveViewDefinition(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Sco
 					return nil, err
 				}
 				return s, nil
-			default:
-				return s, nil
 			}
-		default:
-			return p, nil
 		}
+		return c.Node, nil
 	})
 }
 
