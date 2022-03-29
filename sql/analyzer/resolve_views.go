@@ -180,10 +180,17 @@ func updateTextDefinitionToFull(sqa *plan.SubqueryAlias) string {
 	cols := make([]string, len(p.Projections))
 	for i, projection := range p.Projections {
 		switch pr := projection.(type) {
+		case *expression.Literal:
+			cols[i] = fmt.Sprintf("%s AS `%s`", pr.String(), pr.String())
 		case *expression.GetField:
 			cols[i] = fmt.Sprintf("`%s`.`%s`.`%s` AS `%s`", rt.Database.Name(), pr.Table(), pr.Name(), pr.Name())
 		case *expression.Alias:
-			cols[i] = fmt.Sprintf("`%s`.`%s` AS `%s`", rt.Database.Name(), pr.Child.String(), pr.Name())
+			names := strings.Split(pr.Child.String(), ".")
+			if len(names) == 2 {
+				cols[i] = fmt.Sprintf("`%s`.`%s`.`%s` AS `%s`", rt.Database.Name(), names[0], names[1], pr.Name())
+			} else {
+				cols[i] = fmt.Sprintf("%s AS `%s`", pr.Child.String(), pr.Name())
+			}
 		default:
 			cols[i] = projection.String()
 		}
