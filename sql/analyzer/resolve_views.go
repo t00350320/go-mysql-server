@@ -16,6 +16,8 @@ package analyzer
 
 import (
 	"fmt"
+	"github.com/dolthub/go-mysql-server/sql/expression"
+	"strings"
 
 	"github.com/dolthub/go-mysql-server/sql/grant_tables"
 
@@ -143,4 +145,57 @@ func applyDatabaseQualifierToView(n sql.Node, a *Analyzer, dbName string) (sql.N
 
 		return n, nil
 	})
+}
+
+func resolveViewDefinition(ctx *sql.Context, a *Analyzer, n sql.Node, scope *Scope) (sql.Node, error) {
+	span, _ := ctx.Span("resolve_view_definition")
+	defer span.Finish()
+
+	return plan.TransformUpCtx(n, nil, func(c plan.TransformContext) (sql.Node, error) {
+		switch p := c.Parent.(type) {
+		case *plan.CreateView:
+			switch s := c.Node.(type) {
+			case *plan.SubqueryAlias:
+				err := updateTextDefinitionToFull(ctx, a, s)
+				if err != nil {
+					return nil, err
+				}
+				return s, nil
+			default:
+				return s, nil
+			}
+		default:
+			return p, nil
+		}
+	})
+}
+
+func updateTextDefinitionToFull(ctx *sql.Context, a *Analyzer, sqa *plan.SubqueryAlias) error {
+	p, ok := sqa.Child.(*plan.Project)
+	if !ok {
+		return nil
+	}
+	rt, ok := p.Child.(*plan.ResolvedTable)
+	if !ok {
+		return nil
+	}
+	cols := make([]string, len(p.Projections))
+	for i, projection := range p.Projections {
+		switch pr := projection.(type) {
+		case *expression.GetField:
+			cols[i] = fmt.Sprintf("`%s`.`%s`.`%s` AS `%s`", rt.Database.Name(), pr.Table(), pr.Name(), pr.Name())
+		case *expression.Alias:
+			cols[i] = fmt.Sprintf("`%s`.`%s` AS `%s`", rt.Database.Name(), pr.Child.String(), pr.Name())
+		default:
+			cols[i] = projection.String()
+		}
+	}
+
+	sqa.TextDefinition = fmt.Sprintf(
+		"SELECT %s FROM `%s`.`%s`",
+		strings.Join(cols, ", "),
+		rt.Database.Name(),
+		rt.Name(),
+	)
+	return nil
 }

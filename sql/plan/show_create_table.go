@@ -111,6 +111,8 @@ func (sc *ShowCreateTable) Schema() sql.Schema {
 		return sql.Schema{
 			&sql.Column{Name: "View", Type: sql.LongText, Nullable: false},
 			&sql.Column{Name: "Create View", Type: sql.LongText, Nullable: false},
+			&sql.Column{Name: "character_set_client", Type: sql.LongText, Nullable: false},
+			&sql.Column{Name: "collation_connection", Type: sql.LongText, Nullable: false},
 		}
 	case *ResolvedTable, *UnresolvedTable:
 		return sql.Schema{
@@ -166,8 +168,7 @@ func (i *showCreateTablesIter) Next(ctx *sql.Context) (sql.Row, error) {
 
 	i.didIteration = true
 
-	var composedCreateTableStatement string
-	var tableName string
+	var row sql.Row
 
 	switch table := i.table.(type) {
 	case *ResolvedTable:
@@ -176,23 +177,35 @@ func (i *showCreateTablesIter) Next(ctx *sql.Context) (sql.Row, error) {
 			return nil, ErrNotView.New(table.Name())
 		}
 
-		tableName = table.Name()
-		var err error
-		composedCreateTableStatement, err = i.produceCreateTableStatement(ctx, table.Table, i.schema, i.pkSchema)
+		composedCreateTableStatement, err := i.produceCreateTableStatement(ctx, table.Table, i.schema, i.pkSchema)
 		if err != nil {
 			return nil, err
 		}
+		row = sql.NewRow(
+			table.Name(),                 // "Table" string
+			composedCreateTableStatement, // "Create Table" string
+		)
+
 	case *SubqueryAlias:
-		tableName = table.Name()
-		composedCreateTableStatement = produceCreateViewStatement(table)
+		characterSetClient, err := ctx.GetSessionVariable(ctx, "character_set_client")
+		if err != nil {
+			return nil, err
+		}
+		collationConnection, err := ctx.GetSessionVariable(ctx, "collation_connection")
+		if err != nil {
+			return nil, err
+		}
+		row = sql.NewRow(
+			table.Name(),                      // "Table" string
+			produceCreateViewStatement(table), // "Create Table" string
+			characterSetClient,
+			collationConnection,
+		)
 	default:
 		panic(fmt.Sprintf("unexpected type %T", i.table))
 	}
 
-	return sql.NewRow(
-		tableName,                    // "Table" string
-		composedCreateTableStatement, // "Create Table" string
-	), nil
+	return row, nil
 }
 
 type NameAndSchema interface {
