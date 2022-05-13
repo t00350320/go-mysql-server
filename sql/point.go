@@ -15,9 +15,11 @@
 package sql
 
 import (
+	"fmt"
 	"github.com/dolthub/vitess/go/sqltypes"
 	"github.com/dolthub/vitess/go/vt/proto/query"
 	"gopkg.in/src-d/go-errors.v1"
+	"strconv"
 )
 
 // Represents the Point type.
@@ -126,6 +128,10 @@ func (t PointType) SQL(dest []byte, v interface{}) (sqltypes.Value, error) {
 		return sqltypes.Value{}, nil
 	}
 
+	if p, ok := pv.(Point); ok {
+		pv = fmt.Sprintf("POINT(%s)", PointType{}.PointToWKT(p))
+	}
+
 	return sqltypes.MakeTrusted(sqltypes.Geometry, []byte(pv.(string))), nil
 }
 
@@ -142,4 +148,11 @@ func (t PointType) Type() query.Type {
 // Zero implements Type interface.
 func (t PointType) Zero() interface{} {
 	return Point{X: 0.0, Y: 0.0}
+}
+
+// PointToWKT converts a Point to a string
+func (t PointType) PointToWKT(p Point) string {
+	x := strconv.FormatFloat(p.X, 'g', -1, 64)
+	y := strconv.FormatFloat(p.Y, 'g', -1, 64)
+	return fmt.Sprintf("%s %s", x, y)
 }

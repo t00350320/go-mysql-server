@@ -15,7 +15,9 @@
 package sql
 
 import (
+	"fmt"
 	"gopkg.in/src-d/go-errors.v1"
+	"strings"
 
 	"github.com/dolthub/vitess/go/sqltypes"
 	"github.com/dolthub/vitess/go/vt/proto/query"
@@ -139,6 +141,10 @@ func (t PolygonType) SQL(dest []byte, v interface{}) (sqltypes.Value, error) {
 		return sqltypes.Value{}, nil
 	}
 
+	if p, ok := lv.(Polygon); ok {
+		lv = fmt.Sprintf("POLYGON(%s)", PolygonType{}.PolygonToWKT(p))
+	}
+
 	return sqltypes.MakeTrusted(sqltypes.Geometry, []byte(lv.(string))), nil
 }
 
@@ -155,4 +161,13 @@ func (t PolygonType) Type() query.Type {
 // Zero implements Type interface.
 func (t PolygonType) Zero() interface{} {
 	return Polygon{Lines: []Linestring{{Points: []Point{{}, {}, {}, {}}}}}
+}
+
+// PolygonToWKT converts a Polygon to a string
+func (t PolygonType) PolygonToWKT(p Polygon) string {
+	lines := make([]string, len(p.Lines))
+	for i, l := range p.Lines {
+		lines[i] = "(" + LinestringType{}.LineToWKT(l) + ")"
+	}
+	return strings.Join(lines, ",")
 }

@@ -16,6 +16,7 @@ package sql
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 
 	"github.com/dolthub/vitess/go/sqltypes"
@@ -270,7 +271,20 @@ func (t GeometryType) SQL(dest []byte, v interface{}) (sqltypes.Value, error) {
 
 	pv, err := t.Convert(v)
 	if err != nil {
-		return sqltypes.Value{}, nil
+		return sqltypes.Value{}, err
+	}
+
+	if g, ok := pv.(Geometry); ok {
+		switch val := g.Inner.(type) {
+		case Point:
+			pv = fmt.Sprintf("POINT(%s)", PointType{}.PointToWKT(val))
+		case Linestring:
+			pv = fmt.Sprintf("LINESTRING(%s)", LinestringType{}.LineToWKT(val))
+		case Polygon:
+			pv = fmt.Sprintf("POLYGON(%s)", PolygonType{}.PolygonToWKT(val))
+		default:
+			return sqltypes.Value{}, ErrNotGeometry.New(val)
+		}
 	}
 
 	val := appendAndSlice(dest, []byte(pv.(string)))

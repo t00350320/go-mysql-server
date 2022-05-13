@@ -15,7 +15,9 @@
 package sql
 
 import (
+	"fmt"
 	"gopkg.in/src-d/go-errors.v1"
+	"strings"
 
 	"github.com/dolthub/vitess/go/sqltypes"
 	"github.com/dolthub/vitess/go/vt/proto/query"
@@ -139,6 +141,10 @@ func (t LinestringType) SQL(dest []byte, v interface{}) (sqltypes.Value, error) 
 		return sqltypes.Value{}, nil
 	}
 
+	if l, ok := pv.(Linestring); ok {
+		pv = fmt.Sprintf("LINESTRING(%s)", LinestringType{}.LineToWKT(l))
+	}
+
 	val := appendAndSlice(dest, []byte(pv.(string)))
 
 	return sqltypes.MakeTrusted(sqltypes.Geometry, val), nil
@@ -157,4 +163,13 @@ func (t LinestringType) Type() query.Type {
 // Zero implements Type interface.
 func (t LinestringType) Zero() interface{} {
 	return Linestring{Points: []Point{{}, {}}}
+}
+
+// LineToWKT converts a Linestring to a string
+func (t LinestringType) LineToWKT(l Linestring) string {
+	points := make([]string, len(l.Points))
+	for i, p := range l.Points {
+		points[i] = PointType{}.PointToWKT(p)
+	}
+	return strings.Join(points, ",")
 }
