@@ -2010,6 +2010,16 @@ func columnDefinitionToColumn(ctx *sql.Context, cd *sqlparser.ColumnDefinition, 
 		extra = "auto_increment"
 	}
 
+	if cd.Type.SRID != nil {
+		sridVal, sErr := strconv.ParseInt(string(cd.Type.SRID.Val), 10, 32)
+		if sErr != nil {
+			return nil, sErr
+		}
+		if sridVal != 0 {
+			return nil, sql.ErrUnsupportedFeature.New("non 0 value for SRID")
+		}
+	}
+
 	return &sql.Column{
 		Nullable:      !isPkey && !bool(cd.Type.NotNull),
 		Type:          internalTyp,
